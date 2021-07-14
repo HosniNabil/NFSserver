@@ -1,0 +1,7 @@
+---
+# handlers file for NFSserver
+- name: Restart and enable nfs
+  service:
+    name: "{{ service_name }}"
+    state: restarted
+    enabled: true
