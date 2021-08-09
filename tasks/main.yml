@@ -32,7 +32,7 @@
     state: present
 - name: Create shared directory in Selinux enabled systems
   file:
-    path: "/{{ shared_dir }}"
+    path: "{{ shared_dir }}"
     state: directory
     group: "{{ dir_group }}"
     mode: "{{ permissions }}"
@@ -50,7 +50,7 @@
   lineinfile:
     path: /etc/exports
     state: present
-    line: "/{{ shared_dir }} *(rw,sync,no_root_squash)"
+    line: "{{ shared_dir }} *(rw,sync,no_root_squash)"
   notify: Restart and enable nfs
 - name: Setup firewall for Centos/RHEL
   block:
