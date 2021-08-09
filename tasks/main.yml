@@ -18,14 +18,6 @@
         redhat: true
         service_name: nfs-server
   when: ansible_distribution == "CentOS" or ansible_distribution == "RedHat"
-#- name: Set facts for Debian/Ubunutu
-#  set_fact:
-#    packages: "nfs-kernel-server, ufw"
-#    redhat: false
-#    dir_group: nogroup
-#    service_name: nfs-kernel-server
-#  when: ansible_distribution == "Debian" or ansible_distribution ==  "Ubunutu"
-# install packages
 - name: Install NFS required packages
   package:
     name: "{{ packages }}"
@@ -38,14 +30,6 @@
     mode: "{{ permissions }}"
     setype: nfs_t
   when: redhat == true
-# - name: Create shared directory in disabled Selinux systems
-#   file:
-#     path: "/{{ shared_dir }}"
-#     state: directory
-#     group: nfsnobody
-#     mode: "{{ permissions }}"
-#     owner: nobody
-#   when: redhat == false
 - name: Add shared directory config to exports
   lineinfile:
     path: /etc/exports
@@ -70,4 +54,3 @@
         - mountd
         - rpc-bind
   when: redhat == true
-## Can add ufw port allowing process for Debian/Ubunutu systems
