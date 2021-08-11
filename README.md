@@ -18,7 +18,7 @@ Example Playbook
 
     - hosts: nfs_servers
       roles:
-         - { role: hosninabil.NFSserver, shared_dir: nfstest, permissions: '0755' }
+         - { role: hosninabil.nfsserver, shared_dir: /nfstest, permissions: '0755' }
 
 License
 -------
