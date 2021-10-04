@@ -1,41 +1,24 @@
 ---
 # tasks file for NFSserver
 # set facts
-- name: Set Facts for Centos/RHEL
-  block:
-    - name: Set facts for Centos/RHEL 7
-      set_fact:
-        packages: "nfs-utils, firewalld, python-firewall"
-        dir_group: nfsnobody
-      when: ansible_distribution_major_version is match('7')
-    - name: Set facts for Centos/RHEL 8
-      set_fact:
-        packages: "nfs-utils, firewalld, python3-firewall"
-        dir_group: nobody
-      when: ansible_distribution_major_version is match('8')
-    - name: Set facts for Centos/RHEL
-      set_fact:
-        redhat: true
-        service_name: nfs-server
-  when: ansible_distribution == "CentOS" or ansible_distribution == "RedHat"
+- name: Set facts for Centos/RHEL 7
+  set_fact:
+    packages: "nfs-utils, firewalld, python-firewall"
+    dir_group: nfsnobody
+    service_name: nfs-server
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version is match('7')
+- name: Set facts for Centos/RHEL 8
+  set_fact:
+    packages: "nfs-utils, firewalld, python3-firewall"
+    dir_group: nobody
+    service_name: nfs-server
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version is match('8')
+# set facts for other dists
 - name: Install NFS required packages
   package:
     name: "{{ packages }}"
     state: present
-- name: Create shared directory in Selinux enabled systems
-  file:
-    path: "{{ shared_dir }}"
-    state: directory
-    group: "{{ dir_group }}"
-    mode: "{{ permissions }}"
-    setype: nfs_t
-  when: redhat == true
-- name: Add shared directory config to exports
-  lineinfile:
-    path: /etc/exports
-    state: present
-    line: "{{ shared_dir }} *(rw,sync,no_root_squash)"
-  notify: Restart and enable nfs
+  when: nfs_setup == true
 - name: Setup firewall for Centos/RHEL
   block:
     - name: Ensure Firewalld is active
@@ -53,4 +36,31 @@
         - nfs
         - mountd
         - rpc-bind
-  when: redhat == true
+  when: ansible_os_family == "RedHat" and nfs_setup == true
+- name: Create shared directory in Selinux enabled systems
+  file:
+    path: "{{ shared_dir }}"
+    state: directory
+    group: "{{ dir_group }}"
+    mode: "{{ permissions }}"
+    setype: nfs_t
+  when: ansible_os_family == "RedHat" and add_share == true
+- name: Add shared directory config to exports
+  lineinfile:
+    path: /etc/exports
+    state: present
+    line: "{{ shared_dir }} *(rw,sync,no_root_squash)"
+  notify: Restart and enable nfs
+  when: add_share == true
+- name: Delete shared directory
+  block:
+    - name: delete directory
+      file:
+        path: "{{ shared_dir }}"
+        state: absent
+    - name: delete exports entry
+      lineinfile:
+        path: /etc/exports
+        state: absent
+        line: "{{ shared_dir }} *(rw,sync,no_root_squash)"
+  when: remove_share == true
