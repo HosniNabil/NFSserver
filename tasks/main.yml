@@ -4,16 +4,25 @@
 - name: Set facts for Centos/RHEL 7
   set_fact:
     packages: "nfs-utils, firewalld, python-firewall"
+    dir_owner: root
     dir_group: nfsnobody
     service_name: nfs-server
   when: ansible_os_family == "RedHat" and ansible_distribution_major_version is match('7')
 - name: Set facts for Centos/RHEL 8
   set_fact:
     packages: "nfs-utils, firewalld, python3-firewall"
+    dir_owner: root
     dir_group: nobody
     service_name: nfs-server
   when: ansible_os_family == "RedHat" and ansible_distribution_major_version is match('8')
 # set facts for other dists
+- name: Set facts for Ubuntu/Debian
+  set_fact:
+    packages: "nfs-kernel-server, ufw"
+    dir_owner: nobody
+    dir_group: nogroup
+    service_name: nfs-kernel-server
+  when: ansible_os_family == "Debian"
 - name: Install NFS required packages
   package:
     name: "{{ packages }}"
@@ -37,6 +46,15 @@
         - mountd
         - rpc-bind
   when: ansible_os_family == "RedHat" and nfs_setup == true
+- name: setup firewall for Debian/Ubuntu
+  ufw:
+    state: enabled
+    rule: allow
+    name: "{{ item }}"
+  with_items:
+    - nfs
+    - openssh
+  when: ansible_os_family == "Debian" and nfs_setup == true
 - name: Create shared directory in Selinux enabled systems
   file:
     path: "{{ shared_dir }}"
@@ -45,6 +63,14 @@
     mode: "{{ permissions }}"
     setype: nfs_t
   when: ansible_os_family == "RedHat" and add_share == true
+- name: Create shared directory in Debian systems
+  file:
+    path: "{{ shared_dir }}"
+    state: directory
+    owner: "{{ dir_owner }}"
+    group: "{{ dir_group }}"
+    mode: "{{ permissions }}"
+  when: ansible_os_family == "Debian" and add_share == true
 - name: Add shared directory config to exports
   lineinfile:
     path: /etc/exports
